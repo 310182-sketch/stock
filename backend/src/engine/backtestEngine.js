@@ -304,32 +304,34 @@ class BacktestEngine {
 
   /**
    * 計算部位大小
+   * 預留 0.5% 空間給滑價和手續費
    */
   calculatePositionSize(stockId, currentDay) {
     const { positionSizing, positionSize, riskPerTrade, initialCapital } = this.config;
     const currentEquity = this.calculateCurrentEquity(currentDay);
+    const FEE_RESERVE = 0.995; // 預留 0.5% 給滑價+手續費
     
     switch (positionSizing) {
       case POSITION_SIZING.FIXED:
-        return Math.min(positionSize, this.cash);
+        return Math.min(positionSize * FEE_RESERVE, this.cash * FEE_RESERVE);
         
       case POSITION_SIZING.PERCENT:
-        return Math.min(currentEquity * positionSize, this.cash);
+        return Math.min(currentEquity * positionSize * FEE_RESERVE, this.cash * FEE_RESERVE);
         
       case POSITION_SIZING.KELLY:
         // 簡化的 Kelly 公式：f = (bp - q) / b
         // 假設 b = 1, p = 0.55, q = 0.45
         const kellyFraction = 0.1; // 使用 1/10 Kelly
-        return Math.min(currentEquity * kellyFraction, this.cash);
+        return Math.min(currentEquity * kellyFraction * FEE_RESERVE, this.cash * FEE_RESERVE);
         
       case POSITION_SIZING.EQUAL_RISK:
         // 等風險：每筆交易風險相同
         const riskAmount = currentEquity * riskPerTrade;
         const stopLossPercent = this.config.stopLoss || 0.05;
-        return Math.min(riskAmount / stopLossPercent, this.cash);
+        return Math.min(riskAmount / stopLossPercent * FEE_RESERVE, this.cash * FEE_RESERVE);
         
       default:
-        return Math.min(currentEquity * positionSize, this.cash);
+        return Math.min(currentEquity * positionSize * FEE_RESERVE, this.cash * FEE_RESERVE);
     }
   }
 
@@ -345,14 +347,20 @@ class BacktestEngine {
     
     // 計算可買股數（台股一張 = 1000 股）
     const sharesToBuy = Math.floor(investAmount / executionPrice);
-    if (sharesToBuy <= 0) return;
+    if (sharesToBuy <= 0) {
+      this.log(`[失敗] ${stockId}: 投資金額 $${investAmount.toFixed(0)} 不足以買入 1 股 @ $${executionPrice.toFixed(2)}`, currentDay.date);
+      return;
+    }
     
     // 計算成本
     const cost = sharesToBuy * executionPrice;
     const commission = cost * this.config.commission;
     const totalCost = cost + commission;
     
-    if (totalCost > this.cash) return;
+    if (totalCost > this.cash) {
+      this.log(`[失敗] ${stockId}: 總成本 $${totalCost.toFixed(0)} 超過現金 $${this.cash.toFixed(0)}`, currentDay.date);
+      return;
+    }
     
     // 扣除現金
     this.cash -= totalCost;

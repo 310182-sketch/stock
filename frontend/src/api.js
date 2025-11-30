@@ -6,10 +6,24 @@ const API_BASE = (() => {
 
 async function handleResponse(res) {
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || 'API 請求失敗');
+    let errorMessage = 'API 請求失敗';
+    try {
+      const data = await res.json();
+      errorMessage = data.error || data.message || errorMessage;
+    } catch {
+      try {
+        errorMessage = await res.text() || errorMessage;
+      } catch {
+        // 使用預設錯誤訊息
+      }
+    }
+    throw new Error(errorMessage);
   }
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    throw new Error('回應格式錯誤：無法解析 JSON');
+  }
 }
 
 export async function fetchStrategies() {
@@ -36,6 +50,11 @@ export async function fetchTwHistory(stockId, months = 6) {
   return handleResponse(res);
 }
 
+export async function fetchMarketNews() {
+  const res = await fetch(`${API_BASE}/news`);
+  return handleResponse(res);
+}
+
 export async function fetchTwBacktest(payload) {
   const res = await fetch(`${API_BASE}/tw/backtest`, {
     method: 'POST',
@@ -50,6 +69,24 @@ export async function compareTwStocks(payload) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
+  });
+  return handleResponse(res);
+}
+
+export async function sendLineTest(token) {
+  const res = await fetch(`${API_BASE}/notify/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+  return handleResponse(res);
+}
+
+export async function sendDailySummary(token) {
+  const res = await fetch(`${API_BASE}/notify/daily-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
   });
   return handleResponse(res);
 }

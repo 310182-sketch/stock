@@ -47,27 +47,7 @@ body {
     }
   }
   .stat-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: #0f172a;
-  }
 
-  .stat-suffix {
-    margin-left: 4px;
-    font-size: 12px;
-    color: #94a3b8;
-  }
-
-  .chart-card h3 {
-    margin: 0 0 12px;
-    font-size: 17px;
-    font-weight: 600;
-    color: #0f172a;
-  }
-
-  .chart-placeholder,
-  .placeholder {
-    font-size: 14px;
     color: #94a3b8;
   }
   flex-direction: column;
@@ -217,6 +197,28 @@ body {
   flex-direction: column;
   gap: 12px;
 }
+
+/* Compact mode - global density reduction */
+.compact .panel { padding: 10px; border-radius: 12px; }
+.compact .section-card, .compact .card, .compact .panel { padding: 8px; }
+.compact .stat-card { padding: 6px 8px; font-size: 12px; }
+.compact .stat-label { font-size: 11px; }
+.compact .stat-value { font-size: 14px; }
+.compact .config-section { gap: 8px; }
+.compact .section-header { margin-bottom: 8px; }
+.compact .section-header h3 { font-size: 16px; }
+.compact .view-intro { padding: 10px 12px; border-radius: 12px; }
+.compact .view-intro h2 { font-size: 18px; }
+.compact .view-description { font-size: 13px; }
+.compact .mode-btn, .compact .view-btn { padding: 6px 10px; font-size: 12px; }
+.compact .form-grid { gap: 8px 8px; }
+.compact .tradingview-chart-wrapper { padding: 4px 0 0 0; margin-bottom: 12px; }
+.compact .chart-toolbar { margin-bottom: 6px; }
+.compact .chart-title { font-size: 14px; }
+.compact .chart-container { height: 240px; }
+.compact .metrics-grid { gap: 6px; }
+.compact .section-card { padding: 8px; }
+.compact .panel { box-shadow: none; }
 
 .config-section {
   display: flex;

@@ -315,7 +315,7 @@ export default function StockScanner({ onSelectStock }) {
                           ${pred.price.toFixed(2)} 
                           <span style={{ 
                             marginLeft: '8px',
-                            color: pred.change >= 0 ? '#4ade80' : '#f87171'
+                            color: pred.change >= 0 ? '#f87171' : '#4ade80'
                           }}>
                             ({pred.change >= 0 ? '+' : ''}{pred.change.toFixed(2)}%)
                           </span>

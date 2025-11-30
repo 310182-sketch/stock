@@ -29,9 +29,13 @@ function convertSignals(str) {
 }
 
 async function upsertStock(db, stock) {
-  const existingIdx = db.data.stocks.findIndex(s => s.id === stock.id);
+  // Handle both 'id' and 'stockId' field names from different API sources
+  const stockId = stock.id || stock.stockId;
+  if (!stockId) return; // Skip invalid records without ID
+  
+  const existingIdx = db.data.stocks.findIndex(s => s.id === stockId);
   const record = {
-    id: stock.id,
+    id: stockId,
     name: stock.name,
     market: stock.market,
     industry: stock.industry,
@@ -57,10 +61,19 @@ async function upsertStock(db, stock) {
 }
 
 async function bulkUpsert(db, stocks) {
-  for (const stock of stocks) {
-    await upsertStock(db, stock);
+  // 備份原始資料以支援回滾
+  const backup = JSON.parse(JSON.stringify(db.data));
+  try {
+    for (const stock of stocks) {
+      await upsertStock(db, stock);
+    }
+    await db.write();
+  } catch (err) {
+    // 回滾到備份狀態
+    db.data = backup;
+    console.error('bulkUpsert 失敗，已回滾:', err.message);
+    throw err;
   }
-  await db.write();
 }
 
 // Query helper

@@ -182,13 +182,14 @@ function calculateBollingerBands(data, period, endIndex, stdDev = 2) {
  * 計算 KD 隨機指標 (Stochastic Oscillator)
  * @param {Array} data - 價格數據陣列
  * @param {number} endIndex - 結束索引
- * @param {Object} params - 參數 { kPeriod, dPeriod, slowing }
- * @returns {Object|null} - { k, d, j }
+ * @param {Object} params - 參數 { kPeriod, dPeriod, slowing, skipD }
+ * @returns {Object|null} - { k, d, j } 或 純 k 值 (當 skipD=true)
  */
 function calculateKD(data, endIndex, params = {}) {
   const kPeriod = params.kPeriod || 9;
   const dPeriod = params.dPeriod || 3;
   const slowing = params.slowing || 3;
+  const skipD = params.skipD || false;
   
   if (endIndex < kPeriod + slowing - 2) return null;
   
@@ -214,9 +215,15 @@ function calculateKD(data, endIndex, params = {}) {
   // K 值 = RSV 的 slowing 週期 SMA
   const k = rsvValues.reduce((a, b) => a + b, 0) / rsvValues.length;
   
+  // 如果 skipD=true，只回傳 K 值，避免遞迴
+  if (skipD) {
+    return k;
+  }
+  
   // 計算 D 值 (K 的 dPeriod 週期 SMA)
   let kValues = [];
   for (let i = endIndex - dPeriod + 1; i <= endIndex; i++) {
+    if (i < kPeriod + slowing - 2) continue;
     const tempK = calculateKD(data, i, { ...params, skipD: true });
     if (tempK !== null) {
       kValues.push(typeof tempK === 'object' ? tempK.k : tempK);

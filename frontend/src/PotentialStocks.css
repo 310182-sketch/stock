@@ -388,11 +388,11 @@
 }
 
 .price-change.positive {
-  color: #16a34a;
+  color: #dc2626;
 }
 
 .price-change.negative {
-  color: #dc2626;
+  color: #16a34a;
 }
 
 /* 分類標籤 */

@@ -23,6 +23,7 @@ import {
 import StockScanner from './StockScanner';
 import PotentialStocks from './PotentialStocks';
 import Dashboard from './Dashboard';
+import TradingViewChart from './components/TradingViewChart';
 
 const VIEW_META = {
   dashboard: {
@@ -89,6 +90,12 @@ function StatCard({ label, value, suffix, emphasis }) {
 }
 
 function App() {
+  const [compact, setCompact] = useState(() => {
+    try { return localStorage.getItem('compactMode') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('compactMode', compact ? '1' : '0'); } catch {}
+  }, [compact]);
   const [mode, setMode] = useState('tw'); // 'mock' | 'tw'
   const [view, setView] = useState('dashboard'); // 'dashboard' | 'single' | 'compare' | 'scanner' | 'potential'
   const [strategies, setStrategies] = useState([
@@ -99,6 +106,7 @@ function App() {
   const [twParams, setTwParams] = useState(defaultTwParams);
   const [twSearchKeyword, setTwSearchKeyword] = useState('');
   const [twSearchResults, setTwSearchResults] = useState([]);
+  const [historicalData, setHistoricalData] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [compareSelected, setCompareSelected] = useState(['2330', '0050']);
   const [compareMonths, setCompareMonths] = useState(12);
@@ -172,6 +180,7 @@ function App() {
       
       if (!res.success) throw new Error(res.error || '回測失敗');
       setResult(res.result || res); // tw/backtest 包在 result 裡
+      setHistoricalData(res.historicalData || []);
     } catch (e) {
       setError(e.message || '發生未知錯誤');
     } finally {
@@ -215,10 +224,10 @@ function App() {
   );
 
   return (
-    <div className="app-root">
+    <div className={`app-root ${compact ? 'compact' : ''}`}>
       <header className="app-header">
         <div>
-          <h1>股票回測儀表板</h1>
+          <h1>台股回測工具</h1>
           <p className="subtitle">模擬數據 + 台股實際歷史，一鍵回測策略表現</p>
           <p className="subtitle-small">
             回測 = 把既定交易規則套用到「過去資料」，觀察資產曲線與風險表現，
@@ -226,6 +235,19 @@ function App() {
           </p>
         </div>
         <div className="header-right">
+          <div style={{ marginRight: 8 }}>
+            <button
+              className={compact ? 'mode-btn active' : 'mode-btn'}
+              title="切換緊湊模式"
+              onClick={() => setCompact((c) => !c)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M3 12h18" stroke="#334155" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M7 6h10" stroke="#334155" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M9 18h6" stroke="#334155" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
           {/* Mode toggle removed - only TW history supported */}
           <div className="view-toggle">
             <button
@@ -361,8 +383,11 @@ function App() {
           ) : currentMetrics ? (
             <>
               <MetricsGrid metrics={currentMetrics} />
+              {historicalData.length > 0 && (
+                <TradingViewChart data={historicalData} title={`技術分析 (${twParams.stockId})`} />
+              )}
               <div className="chart-card">
-                <h3>權益曲線 & 價格走勢</h3>
+                <h3>策略權益曲線</h3>
                 <EquityChart data={chartData} />
               </div>
             </>

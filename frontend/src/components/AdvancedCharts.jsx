@@ -118,12 +118,12 @@ export function DrawdownChart({ equityCurve }) {
           <Area 
             type="monotone" 
             dataKey="drawdown" 
-            stroke="#e74c3c" 
-            fill="#ffcccc"
+            stroke="#2ecc71" 
+            fill="#dcfce7"
             fillOpacity={0.6}
           />
           <ReferenceLine y={-10} stroke="#ff9800" strokeDasharray="3 3" />
-          <ReferenceLine y={-20} stroke="#e74c3c" strokeDasharray="3 3" />
+          <ReferenceLine y={-20} stroke="#2ecc71" strokeDasharray="3 3" />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -406,8 +406,8 @@ export function HoldingPeriodAnalysis({ trades }) {
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
           <Tooltip />
           <Bar yAxisId="left" dataKey="trades" name="交易次數" fill="#9b59b6" />
-          <Bar yAxisId="right" dataKey="avgProfit" name="平均報酬%" fill="#2ecc71" />
-        </BarChart>
+          <Bar yAxisId="right" dataKey="avgProfit" name="平均報酬%" fill="#e74c3c" />
+        </BarChart>>
       </ResponsiveContainer>
     </div>
   );

@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { fetchMarketNews, sendLineTest, sendDailySummary } from './api';
 import './Dashboard.css';
 
 const API_BASE = '';
@@ -12,12 +13,70 @@ export default function Dashboard({ onNavigate, onSelectStock }) {
   const [marketData, setMarketData] = useState(null);
   const [hotStocks, setHotStocks] = useState([]);
   const [signals, setSignals] = useState([]);
+  const [newsData, setNewsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
 
+  // Line Notify State
+  const [showLineModal, setShowLineModal] = useState(false);
+  const [lineToken, setLineToken] = useState(localStorage.getItem('lineToken') || '');
+  const [testStatus, setTestStatus] = useState({ type: '', msg: '' });
+
   useEffect(() => {
     loadDashboardData();
+    loadNews();
   }, []);
+
+  const handleLineTest = async () => {
+    if (!lineToken) {
+      setTestStatus({ type: 'error', msg: '請輸入 Line Notify Token' });
+      return;
+    }
+    
+    setTestStatus({ type: 'info', msg: '發送測試訊息中...' });
+    try {
+      localStorage.setItem('lineToken', lineToken);
+      const result = await sendLineTest(lineToken);
+      if (result.success) {
+        setTestStatus({ type: 'success', msg: '測試訊息發送成功！請檢查您的 Line。' });
+      } else {
+        setTestStatus({ type: 'error', msg: '發送失敗: ' + (result.error || '未知錯誤') });
+      }
+    } catch (err) {
+      setTestStatus({ type: 'error', msg: '發送失敗: ' + err.message });
+    }
+  };
+
+  const handleDailySummary = async () => {
+    if (!lineToken) {
+      setTestStatus({ type: 'error', msg: '請輸入 Line Notify Token' });
+      return;
+    }
+
+    setTestStatus({ type: 'info', msg: '正在生成並發送日報...' });
+    try {
+      localStorage.setItem('lineToken', lineToken);
+      const result = await sendDailySummary(lineToken);
+      if (result.success) {
+        setTestStatus({ type: 'success', msg: '日報發送成功！請檢查您的 Line。' });
+      } else {
+        setTestStatus({ type: 'error', msg: '發送失敗: ' + (result.error || '未知錯誤') });
+      }
+    } catch (err) {
+      setTestStatus({ type: 'error', msg: '發送失敗: ' + err.message });
+    }
+  };
+
+  const loadNews = async () => {
+    try {
+      const data = await fetchMarketNews();
+      if (data.success) {
+        setNewsData(data);
+      }
+    } catch (err) {
+      console.error('載入新聞失敗:', err);
+    }
+  };
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -152,9 +211,14 @@ export default function Dashboard({ onNavigate, onSelectStock }) {
             {lastUpdate && <span className="update-time"> (更新: {new Date(lastUpdate).toLocaleTimeString()})</span>}
           </p>
         </div>
-        <button className="refresh-btn" onClick={loadDashboardData} disabled={loading}>
-          {loading ? '⏳ 載入中...' : '🔄 重新整理'}
-        </button>
+        <div style={{ display: 'flex' }}>
+          <button className="notify-btn" onClick={() => setShowLineModal(true)}>
+            🔔 Line 通知設定
+          </button>
+          <button className="refresh-btn" onClick={loadDashboardData} disabled={loading}>
+            {loading ? '⏳ 載入中...' : '🔄 重新整理'}
+          </button>
+        </div>
       </div>
 
       {/* 市場概況卡片 */}
@@ -235,6 +299,36 @@ export default function Dashboard({ onNavigate, onSelectStock }) {
             <p className="highlight-label">市場焦點</p>
             <p className="highlight-value">正在載入中…</p>
           </div>
+        )}
+      </div>
+
+      {/* 市場新聞與輿情 */}
+      <div className="section-title">
+        <h3>📰 市場輿情分析</h3>
+        {newsData && (
+          <span className={`sentiment-badge ${newsData.marketSentiment}`}>
+            市場情緒: {newsData.marketSentiment === 'bullish' ? '看多 🐂' : newsData.marketSentiment === 'bearish' ? '看空 🐻' : '中立 😐'}
+          </span>
+        )}
+      </div>
+      <div className="news-section">
+        {newsData ? (
+          <div className="news-grid">
+            {newsData.news.slice(0, 6).map((item, idx) => (
+              <a key={idx} href={item.link} target="_blank" rel="noopener noreferrer" className={`news-card ${item.sentiment}`}>
+                <div className="news-header">
+                  <span className="news-source">{item.source}</span>
+                  <span className="news-score" title="情緒分數">{item.score > 0 ? `+${item.score}` : item.score}</span>
+                </div>
+                <h4 className="news-title">{item.title}</h4>
+                <div className="news-keywords">
+                  {item.keywords.map(k => <span key={k} className="keyword-tag">{k}</span>)}
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="loading-placeholder">正在分析市場新聞...</div>
         )}
       </div>
 
@@ -380,6 +474,55 @@ export default function Dashboard({ onNavigate, onSelectStock }) {
           </div>
         </div>
       </div>
+
+      {/* Line Notify Modal */}
+      {showLineModal && (
+        <div className="modal-overlay" onClick={() => setShowLineModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔔 Line 通知設定</h3>
+              <button className="close-btn" onClick={() => setShowLineModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="input-group">
+                <label>Line Notify Token</label>
+                <input 
+                  type="password" 
+                  value={lineToken} 
+                  onChange={(e) => setLineToken(e.target.value)}
+                  placeholder="請輸入您的 Line Notify Token"
+                />
+                <div className="help-text">
+                  還沒有 Token？請至 <a href="https://notify-bot.line.me/my/" target="_blank" rel="noopener noreferrer">Line Notify 個人頁面</a> 申請。
+                  <br/>
+                  申請後請將 Token 貼上至此欄位。
+                </div>
+              </div>
+              
+              {testStatus.msg && (
+                <div style={{ 
+                  padding: '12px', 
+                  borderRadius: '8px', 
+                  marginBottom: '16px',
+                  background: testStatus.type === 'error' ? '#fee2e2' : testStatus.type === 'success' ? '#dcfce7' : '#e0f2fe',
+                  color: testStatus.type === 'error' ? '#991b1b' : testStatus.type === 'success' ? '#166534' : '#075985'
+                }}>
+                  {testStatus.msg}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowLineModal(false)}>取消</button>
+              <button className="btn-secondary" onClick={handleDailySummary} disabled={!lineToken}>
+                發送今日日報
+              </button>
+              <button className="btn-primary" onClick={handleLineTest} disabled={!lineToken}>
+                發送測試訊息
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
