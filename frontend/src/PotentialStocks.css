@@ -1,0 +1,758 @@
+/* 潛力股專區樣式 - 現代設計感 */
+
+.potential-stocks {
+  padding: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+.potential-stocks::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.15) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.potential-stocks > * {
+  position: relative;
+  z-index: 1;
+}
+
+.potential-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.potential-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.potential-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+}
+
+.refresh-btn {
+  padding: 12px 24px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 20px rgba(0, 210, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 210, 255, 0.5);
+}
+
+.refresh-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* 英雄摘要區塊 */
+.hero-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.hero-card {
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hero-card--primary {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+  border: none;
+  box-shadow: 0 12px 32px rgba(118, 75, 162, 0.4);
+}
+
+.hero-label {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-value {
+  margin: 8px 0 4px;
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+}
+
+.hero-card:not(.hero-card--primary) .hero-label {
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.hero-card:not(.hero-card--primary) .hero-value {
+  color: #0f172a;
+}
+
+.hero-sub {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-card:not(.hero-card--primary) .hero-sub {
+  color: #475569;
+}
+
+/* 控制面板 - 玻璃擬態 */
+.potential-controls {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 28px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.control-group {
+  flex: 1;
+}
+
+.control-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 10px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #2563eb;
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.control-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #1f2937;
+}
+
+.control-group select:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: white;
+}
+
+.control-group select:focus {
+  outline: none;
+  border-color: #00d2ff;
+  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.2);
+  background: white;
+}
+
+/* 統計摘要 - 玻璃卡片 */
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* 股票網格 - 3D 卡片效果 */
+.potential-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+  perspective: 1000px;
+}
+
+.potential-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  border: none;
+  overflow: hidden;
+}
+
+.potential-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.potential-card:hover {
+  transform: translateY(-8px) rotateX(2deg);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(102, 126, 234, 0.3) inset;
+}
+
+.potential-card:hover::before {
+  opacity: 1;
+}
+
+/* 評分徽章 - 發光效果 */
+.score-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: white;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    0 0 40px rgba(255, 255, 255, 0.2) inset;
+  animation: glow 2.5s ease-in-out infinite;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes glow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.25),
+      0 0 40px rgba(255, 255, 255, 0.2) inset;
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 
+      0 6px 30px rgba(0, 0, 0, 0.3),
+      0 0 60px rgba(255, 255, 255, 0.4) inset;
+  }
+}
+
+/* 股票資訊 */
+.stock-info {
+  margin-bottom: 16px;
+}
+
+.stock-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stock-code {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1f2937;
+  margin-right: 8px;
+}
+
+.stock-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.stock-industry {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.current-price {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.price-change {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.price-change.positive {
+  color: #16a34a;
+}
+
+.price-change.negative {
+  color: #dc2626;
+}
+
+/* 分類標籤 */
+.category-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* 關鍵指標 */
+.key-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.metric-value.potential {
+  color: #f59e0b;
+}
+
+/* 選股理由 */
+.reasons {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border-radius: 12px;
+  border-left: 4px solid #f59e0b;
+}
+
+.reasons-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.reasons ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reasons li {
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1.8;
+  font-weight: 500;
+}
+
+/* 目標價 */
+.targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.target-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+}
+
+.target-label {
+  font-size: 11px;
+  color: #15803d;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.target-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: #166534;
+}
+
+/* 操作按鈕 */
+.detail-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.detail-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* 空狀態 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.empty-state button {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+  background: transparent;
+  color: #3b82f6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.empty-state button:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+/* 搜尋框 - 玻璃效果 */
+.search-group {
+  flex: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  font-size: 15px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+  color: #1f2937;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-input:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: white;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #00d2ff;
+  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.2);
+  background: white;
+}
+
+/* 市場標籤 */
+.market-badge {
+  position: absolute;
+  top: 50px;
+  right: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+}
+
+/* 技術訊號標籤 */
+.signal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.signal-tag {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+/* 分頁資訊 */
+.pagination-info {
+  text-align: center;
+  padding: 12px;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* 分頁控制 - 玻璃風格 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+}
+
+.page-btn {
+  padding: 12px 20px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+}
+
+/* 錯誤橫幅 - 玻璃風格 */
+.error-banner {
+  padding: 16px 24px;
+  margin-bottom: 20px;
+  background: rgba(254, 202, 202, 0.3);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  color: #fef2f2;
+  font-size: 15px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 更新時間 */
+.update-time {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-left: 8px;
+}
+
+/* 載入狀態 - 現代動畫 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  color: white;
+}
+
+.loading-state p {
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top: 4px solid #00d2ff;
+  border-right: 4px solid #f093fb;
+  border-radius: 50%;
+  animation: spinGlow 1s linear infinite;
+  margin-bottom: 20px;
+  box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+}
+
+@keyframes spinGlow {
+  0% { 
+    transform: rotate(0deg);
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(240, 147, 251, 0.4);
+  }
+  100% { 
+    transform: rotate(360deg);
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+  }
+}
+
+/* 響應式設計 */
+@media (max-width: 1024px) {
+  .potential-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stats-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .potential-controls {
+    flex-wrap: wrap;
+  }
+  
+  .control-group {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .potential-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .pagination {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

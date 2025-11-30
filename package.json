@@ -1,0 +1,22 @@
+{
+  "name": "stock-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Root scripts to run backend (Express) and frontend (Vite).",
+  "scripts": {
+    "start:backend": "cd backend && npm run start || node src/app.js",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:all": "npm-run-all -p start:backend start:frontend",
+    "kill": "lsof -i :3001 -t | xargs -r kill -9; lsof -i :5173 -t | xargs -r kill -9",
+    "start": "npm run kill && npm run start:all",
+    "start:pm2": "npx pm2 start ecosystem.config.js && npx pm2 save",
+    "stop:pm2": "npx pm2 stop ecosystem.config.js || true && npx pm2 delete ecosystem.config.js || true",
+    "status:pm2": "npx pm2 list",
+    "logs:pm2": "npx pm2 logs --lines 200",
+    "restart:pm2": "npx pm2 restart ecosystem.config.js"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "pm2": "^5.2.0"
+  }
+}

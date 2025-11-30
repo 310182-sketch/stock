@@ -1,0 +1,28 @@
+{
+  "name": "stock-backtest-backend",
+  "version": "1.0.0",
+  "description": "股票回測 App 後端 API - 模組化分層設計",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stock",
+    "backtest",
+    "trading",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "lowdb": "^6.0.1",
+    "p-limit": "^5.0.0"
+  },
+  "devDependencies": {}
+}

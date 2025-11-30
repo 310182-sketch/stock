@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+dist/
+build/
+.env
+*.log
+coverage/
+.vscode/
+stock-app-v1.0.0.zip
+.venv/
+venv/
+__pycache__/
+*.pyc

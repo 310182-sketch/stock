@@ -1,0 +1,22 @@
+{
+  "stocks": [
+    {
+      "name": "漢磊",
+      "market": "tpex",
+      "industry": "半導體",
+      "price": 395.8109868065891,
+      "change": 4.785198251400273,
+      "changePercent": 0,
+      "volume": 48472866,
+      "rsi": 0,
+      "ma5": 0,
+      "ma20": 0,
+      "ma60": 0,
+      "aiScore": 0,
+      "potentialScore": 0,
+      "technicalScore": 0,
+      "signals": [],
+      "lastUpdate": "2025-11-30T06:00:50.259Z"
+    }
+  ]
+}
