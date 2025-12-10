@@ -97,26 +97,51 @@ app.get('/api/tw/history/:symbol', async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// 掃描股票
+// 掃描股票 (支援篩選條件)
 app.post('/api/tw/scan', async (req, res) => {
   try {
-    const ids = req.body?.stockIds || ['2330', '2317', '2454'];
     if (!twStockData) return res.status(503).json({ success: false, error: '模組未載入' });
     
-    const results = [];
-    for (const symbol of ids) {
-      const data = await twStockData.getRealtimePrice(symbol);
-      if (data) {
-        const change = parseFloat(data.changePercent);
-        results.push({
-          stockId: data.stockId, name: data.name, price: data.price,
-          changePercent: change, volume: data.volume,
-          signals: change > 3 ? ['強勢'] : change < -3 ? ['弱勢'] : ['觀望']
-        });
+    const { stockIds, minPrice, maxPrice, minChange, maxChange, minVolume } = req.body || {};
+    
+    // 若有指定 stockIds，只掃描這些股票；否則取得所有股票
+    let stocksToScan;
+    if (stockIds?.length) {
+      stocksToScan = [];
+      for (const symbol of stockIds) {
+        const data = await twStockData.getRealtimePrice(symbol);
+        if (data) stocksToScan.push(data);
+        await sleep(50);
       }
-      await sleep(100);
+    } else {
+      stocksToScan = await twStockData.getAllStocks() || [];
     }
-    res.json({ success: true, results });
+    
+    // 應用篩選條件
+    const results = stocksToScan.filter(s => {
+      if (!s || !s.close) return false;
+      const price = s.close || s.price || 0;
+      const change = parseFloat(s.changePercent || 0);
+      const volume = s.volume || 0;
+      
+      if (minPrice && price < minPrice) return false;
+      if (maxPrice && price > maxPrice) return false;
+      if (minChange && change < minChange) return false;
+      if (maxChange && change > maxChange) return false;
+      if (minVolume && volume < minVolume) return false;
+      return true;
+    }).map(s => ({
+      symbol: s.stockId,
+      stockId: s.stockId,
+      name: s.name,
+      price: s.close || s.price,
+      changePercent: parseFloat(s.changePercent || 0),
+      volume: s.volume || 0,
+      industry: s.industry || '其他',
+      signals: parseFloat(s.changePercent || 0) > 3 ? ['強勢'] : parseFloat(s.changePercent || 0) < -3 ? ['弱勢'] : ['觀望']
+    }));
+    
+    res.json({ success: true, total: results.length, stocks: results });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -171,21 +196,42 @@ function simpleBacktest(data, capital = 1000000, size = 1) {
   return { trades, equityCurve: curve, finalEquity, metrics: { totalReturn: ((finalEquity - capital) / capital * 100).toFixed(2), totalTrades: trades.length } };
 }
 
-// 比較股票
+// 比較股票 (同時支援 stocks 和 symbols 參數)
 app.post('/api/tw/compare', async (req, res) => {
   try {
-    const { stocks = ['2330', '0050'], months = 12, market = 'twse' } = req.body || {};
+    const { stocks, symbols, months = 12, market = 'twse' } = req.body || {};
+    const stockList = symbols || stocks || ['2330', '0050'];
     if (!twStockData) return res.status(503).json({ success: false, error: '模組未載入' });
     
     const series = [];
-    for (const symbol of stocks) {
+    const stocksData = [];
+    
+    for (const symbol of stockList) {
       const data = await twStockData.getStockHistory(symbol, months, market);
+      const realtime = await twStockData.getRealtimePrice(symbol);
+      
       if (data?.length) {
         const start = data[0].close;
-        series.push({ symbol, data: data.map(d => ({ date: d.date, value: ((d.close - start) / start * 100).toFixed(2) })) });
+        const latest = data[data.length - 1];
+        series.push({ 
+          symbol, 
+          data: data.map(d => ({ date: d.date, value: ((d.close - start) / start * 100).toFixed(2) })) 
+        });
+        
+        // 同時提供前端期望的 stocks 格式
+        stocksData.push({
+          symbol,
+          name: realtime?.name || symbol,
+          price: latest?.close || realtime?.close || 0,
+          changePercent: realtime?.changePercent || ((latest?.close - start) / start * 100),
+          volume: realtime?.volume || latest?.volume || 0,
+          marketCap: null,
+          pe: null,
+          rsi: null
+        });
       }
     }
-    res.json({ success: true, series });
+    res.json({ success: true, series, stocks: stocksData });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -292,7 +338,7 @@ app.get('/api/tw/potential-stocks', async (req, res) => {
       const score = Math.round(50 + (rsi > C.SCORING.RSI_OVERBOUGHT ? -10 : rsi < C.SCORING.RSI_OVERSOLD ? 10 : 0) + (change > 3 ? 15 : change < -3 ? -10 : change * 3));
 
       return {
-        id: s.stockId, name: s.name, price: s.close, change: s.change,
+        symbol: s.stockId, id: s.stockId, name: s.name, price: s.close, change: s.change,
         changePercent: parseFloat(change.toFixed(2)), volume: s.volume,
         industry: s.industry || twStockData.inferIndustry?.(s.stockId, s.name) || '其他',
         rsi: Math.round(rsi), aiScore: Math.min(100, Math.max(0, score)),
