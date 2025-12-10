@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Analysis - 頁面重定向</title>
+  <script>
+    // GitHub Pages SPA redirect hack
+    // This script redirects 404 pages to the main app with the path as a query parameter
+    // The main app then reads the query and navigates to the correct route
+    const pathSegmentsToKeep = 1; // /stock/ is the base
+    
+    const l = window.location;
+    const repo = '/stock';
+    
+    // Store the path and redirect to index
+    sessionStorage.setItem('redirect', l.pathname.slice(repo.length) + l.search + l.hash);
+    l.replace(repo + '/?' + l.pathname.slice(repo.length).split('/').filter(Boolean).join('&'));
+  </script>
+</head>
+<body>
+  <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #121212; color: #e0e0e0; font-family: system-ui, sans-serif;">
+    <div style="text-align: center;">
+      <div style="font-size: 1.2rem; margin-bottom: 1rem;">正在重定向...</div>
+      <div style="color: #9e9e9e;">如果沒有自動跳轉，請<a href="/stock/" style="color: #90caf9;">點擊這裡</a></div>
+    </div>
+  </div>
+</body>
+</html>
