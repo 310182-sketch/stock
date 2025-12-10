@@ -5,6 +5,9 @@
 
 const axios = require('axios');
 const { getAllTWSEStocksFromHTML, getAllTPExStocksFromHTML, getTWSEStockDataFromHTML } = require('./twStockScraper');
+const finmind = require('../integrations/finmind');
+const yahoo = require('../integrations/yahoo');
+const fbs = require('../integrations/fbs');
 
 // API 端點
 const TWSE_API = 'https://www.twse.com.tw/exchangeReport';
@@ -36,6 +39,102 @@ function setCache(key, data, ttl) {
 
 function clearCache() {
   cache.clear();
+}
+
+// ============================================
+// 中文股票名稱對照表
+// ============================================
+const STOCK_NAME_MAP = {
+  // 上市股票
+  '2330': { name: '台積電', industry: '半導體', market: 'twse' },
+  '2317': { name: '鴻海', industry: '電子零組件', market: 'twse' },
+  '2454': { name: '聯發科', industry: '半導體', market: 'twse' },
+  '2308': { name: '台達電', industry: '電子零組件', market: 'twse' },
+  '2382': { name: '廣達', industry: '電腦及週邊', market: 'twse' },
+  '2881': { name: '富邦金', industry: '金融保險', market: 'twse' },
+  '2882': { name: '國泰金', industry: '金融保險', market: 'twse' },
+  '2891': { name: '中信金', industry: '金融保險', market: 'twse' },
+  '2303': { name: '聯電', industry: '半導體', market: 'twse' },
+  '2412': { name: '中華電', industry: '通信網路', market: 'twse' },
+  '2886': { name: '兆豐金', industry: '金融保險', market: 'twse' },
+  '2884': { name: '玉山金', industry: '金融保險', market: 'twse' },
+  '3008': { name: '大立光', industry: '光電', market: 'twse' },
+  '2357': { name: '華碩', industry: '電腦及週邊', market: 'twse' },
+  '2379': { name: '瑞昱', industry: '半導體', market: 'twse' },
+  '3711': { name: '日月光投控', industry: '半導體', market: 'twse' },
+  '2892': { name: '第一金', industry: '金融保險', market: 'twse' },
+  '2301': { name: '光寶科', industry: '電子零組件', market: 'twse' },
+  '2002': { name: '中鋼', industry: '鋼鐵', market: 'twse' },
+  '1301': { name: '台塑', industry: '塑膠', market: 'twse' },
+  '1303': { name: '南亞', industry: '塑膠', market: 'twse' },
+  '1326': { name: '台化', industry: '塑膠', market: 'twse' },
+  '6505': { name: '台塑化', industry: '油電燃氣', market: 'twse' },
+  '0050': { name: '元大台灣50', industry: 'ETF', market: 'twse' },
+  '0056': { name: '元大高股息', industry: 'ETF', market: 'twse' },
+  '00878': { name: '國泰永續高股息', industry: 'ETF', market: 'twse' },
+  '00919': { name: '群益台灣精選高息', industry: 'ETF', market: 'twse' },
+  '2603': { name: '長榮', industry: '航運', market: 'twse' },
+  '2609': { name: '陽明', industry: '航運', market: 'twse' },
+  '2615': { name: '萬海', industry: '航運', market: 'twse' },
+  '3034': { name: '聯詠', industry: '半導體', market: 'twse' },
+  '2327': { name: '國巨', industry: '電子零組件', market: 'twse' },
+  '2345': { name: '智邦', industry: '通信網路', market: 'twse' },
+  '2353': { name: '宏碁', industry: '電腦及週邊', market: 'twse' },
+  '2376': { name: '技嘉', industry: '電腦及週邊', market: 'twse' },
+  '2377': { name: '微星', industry: '電腦及週邊', market: 'twse' },
+  '2395': { name: '研華', industry: '電腦及週邊', market: 'twse' },
+  '2408': { name: '南亞科', industry: '半導體', market: 'twse' },
+  '2474': { name: '可成', industry: '電子零組件', market: 'twse' },
+  '2633': { name: '台灣高鐵', industry: '觀光', market: 'twse' },
+  '2801': { name: '彰銀', industry: '金融保險', market: 'twse' },
+  '2880': { name: '華南金', industry: '金融保險', market: 'twse' },
+  '2883': { name: '開發金', industry: '金融保險', market: 'twse' },
+  '2885': { name: '元大金', industry: '金融保險', market: 'twse' },
+  '2887': { name: '台新金', industry: '金融保險', market: 'twse' },
+  '2888': { name: '新光金', industry: '金融保險', market: 'twse' },
+  '2890': { name: '永豐金', industry: '金融保險', market: 'twse' },
+  '2912': { name: '統一超', industry: '貿易百貨', market: 'twse' },
+  '3037': { name: '欣興', industry: '電子零組件', market: 'twse' },
+  '3045': { name: '台灣大', industry: '通信網路', market: 'twse' },
+  '3231': { name: '緯創', industry: '電腦及週邊', market: 'twse' },
+  '3443': { name: '創意', industry: '半導體', market: 'twse' },
+  '3481': { name: '群創', industry: '光電', market: 'twse' },
+  '3529': { name: '力旺', industry: '半導體', market: 'twse' },
+  '3661': { name: '世芯-KY', industry: '半導體', market: 'twse' },
+  '3702': { name: '大聯大', industry: '電子通路', market: 'twse' },
+  '4904': { name: '遠傳', industry: '通信網路', market: 'twse' },
+  '4938': { name: '和碩', industry: '電腦及週邊', market: 'twse' },
+  '5871': { name: '中租-KY', industry: '金融保險', market: 'twse' },
+  '5880': { name: '合庫金', industry: '金融保險', market: 'twse' },
+  '6415': { name: '矽力-KY', industry: '半導體', market: 'twse' },
+  '6446': { name: '藥華藥', industry: '生技醫療', market: 'twse' },
+  '6669': { name: '緯穎', industry: '電腦及週邊', market: 'twse' },
+  '6770': { name: '力積電', industry: '半導體', market: 'twse' },
+  // 上櫃股票
+  '6488': { name: '環球晶', industry: '半導體', market: 'tpex' },
+  '5483': { name: '中美晶', industry: '半導體', market: 'tpex' },
+  '3105': { name: '穩懋', industry: '半導體', market: 'tpex' },
+  '8069': { name: '元太', industry: '光電', market: 'tpex' },
+  '6409': { name: '旭隼', industry: '電子零組件', market: 'tpex' },
+  '3293': { name: '鑫創', industry: '半導體', market: 'tpex' },
+  '5269': { name: '祥碩', industry: '半導體', market: 'tpex' },
+  '6547': { name: '高端疫苗', industry: '生技醫療', market: 'tpex' },
+  '8046': { name: '南電', industry: '電子零組件', market: 'tpex' },
+  '3530': { name: '晶相光', industry: '半導體', market: 'tpex' },
+  '4966': { name: '譜瑞-KY', industry: '半導體', market: 'tpex' },
+  '5289': { name: '宜鼎', industry: '半導體', market: 'tpex' },
+  '6533': { name: '晶心科', industry: '半導體', market: 'tpex' },
+  '6803': { name: '崧騰', industry: '電子零組件', market: 'tpex' },
+  '3707': { name: '漢磊', industry: '半導體', market: 'tpex' },
+};
+
+/**
+ * 查詢股票中文資訊
+ * @param {string} stockId - 股票代號
+ * @returns {Object|null} { name, industry, market }
+ */
+function getStockInfo(stockId) {
+  return STOCK_NAME_MAP[stockId] || null;
 }
 
 /**
@@ -151,6 +250,68 @@ async function getStockHistory(stockId, months = 12, market = 'twse') {
   const cacheKey = `history_${stockId}_${months}_${market}`;
   const cached = getCached(cacheKey);
   if (cached) return cached;
+  // 若提供 FinMind token，優先使用 FinMind 取得歷史（一次區間請求）
+  const token = process.env.FINMIND_TOKEN || null;
+  // If FBS is configured, prefer FBS for history (single range request)
+  const fbsKey = process.env.FBS_API_KEY || null;
+  if (fbsKey && market === 'twse') {
+    try {
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(start.getMonth() - months + 1);
+      const startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+      const data = await fbs.fetchHistory(stockId, startDate, endDate);
+      if (Array.isArray(data) && data.length) {
+        const allData = data.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+        setCache(cacheKey, allData, CACHE_TTL.HISTORY);
+        return allData;
+      }
+    } catch (e) {
+      // ignore and fallback
+    }
+  }
+
+  if (token && market === 'twse') {
+    try {
+      const end = new Date();
+      const start = new Date();
+      start.setMonth(start.getMonth() - months + 1);
+      const startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+      const endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+      const data = await finmind.fetchHistorical(stockId, startDate, endDate, 'TaiwanStockPrice', token);
+      // finmind 回傳為每日 OHLCV
+      const allData = Array.isArray(data) ? data : [];
+      allData.sort((a, b) => new Date(a.date) - new Date(b.date));
+      setCache(cacheKey, allData, CACHE_TTL.HISTORY);
+      if (allData.length) return allData;
+    } catch (e) {
+      // ignore and fallback to default
+    }
+  }
+
+  // Yahoo Finance fallback to bridge unreliable TWSE/TPEx endpoints
+  try {
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(1); // align to beginning of month to ensure enough candles
+    start.setMonth(start.getMonth() - Math.max(1, months));
+
+    const data = await yahoo.fetchHistory(stockId, { period1: start, period2: end, interval: '1d' });
+    if (Array.isArray(data) && data.length > 0) {
+      const allData = data
+        .filter(d => d?.date && Number.isFinite(d.close))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (allData.length) {
+        setCache(cacheKey, allData, CACHE_TTL.HISTORY);
+        return allData;
+      }
+    }
+  } catch (e) {
+    console.error('Yahoo history fallback failed:', e.message);
+  }
+
+  // fallback: 原本按月呼叫 TWSE/TPEx API
   const now = new Date();
   const fetchFn = market === 'tpex' ? getTPExStockData : getTWSEStockData;
   let allData = [];
@@ -178,39 +339,52 @@ async function getRealtimePrice(stockId) {
     return cached;
   }
 
-  try {
-    // TWSE 盤中即時資訊 API
-    const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${stockId}.tw`;
-    
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json'
-      },
-      timeout: 5000
-    });
+  // 取得中文股票資訊
+  const stockInfo = getStockInfo(stockId);
+  const chineseName = stockInfo?.name || null;
+  const market = stockInfo?.market || 'twse';
 
-    if (!response.data.msgArray || response.data.msgArray.length === 0) {
-      return null;
+  try {
+    // 優先使用 yahoo integration 取得即時價（支援 TW 市場），作為最常用的回退
+    // If FBS configured, try FBS first for realtime
+    const fbsKey = process.env.FBS_API_KEY || null;
+    if (fbsKey) {
+      try {
+        const f = await fbs.fetchRealtime(stockId);
+        if (f) { setCache(cacheKey, f, CACHE_TTL.REALTIME); return f; }
+      } catch (e) { /* ignore */ }
     }
 
+    // 使用 Yahoo Finance 並傳入中文名稱
+    const yahooRes = await yahoo.fetchRealtime(stockId, chineseName, market);
+    if (yahooRes) {
+      // 補充產業資訊
+      if (stockInfo?.industry) {
+        yahooRes.industry = stockInfo.industry;
+      }
+      setCache(cacheKey, yahooRes, CACHE_TTL.REALTIME);
+      return yahooRes;
+    }
+
+    // 否則回退到原本的 MIS API
+    const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_${stockId}.tw|otc_${stockId}.tw`;
+    const response = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+      timeout: 5000
+    });
+    if (!response.data.msgArray || response.data.msgArray.length === 0) return null;
     const stock = response.data.msgArray[0];
-    
-    const result = {
-      stockId: stock.c,
-      name: stock.n,
-      price: parseFloat(stock.z) || parseFloat(stock.y), // 成交價或昨收
-      open: parseFloat(stock.o),
-      high: parseFloat(stock.h),
-      low: parseFloat(stock.l),
-      yesterday: parseFloat(stock.y),
-      volume: parseInt(stock.v) * 1000, // 成交張數轉股數
-      time: stock.t,
-      change: parseFloat(stock.z) - parseFloat(stock.y),
-      changePercent: ((parseFloat(stock.z) - parseFloat(stock.y)) / parseFloat(stock.y) * 100).toFixed(2)
-    };
-    
-    // 存入快取
+    const toFloat = v => { if (v === null || v === undefined) return null; const s = String(v).replace(/,/g, '').replace(/^-$/, ''); const n = parseFloat(s); return Number.isNaN(n) ? null : n; };
+    const toInt = v => { if (v === null || v === undefined) return 0; const s = String(v).replace(/,/g, '').replace(/^-$/, ''); const n = parseInt(s, 10); return Number.isNaN(n) ? 0 : n; };
+    const price = toFloat(stock.z) ?? toFloat(stock.y) ?? 0;
+    const yesterday = toFloat(stock.y) ?? 0;
+    const open = toFloat(stock.o) ?? 0;
+    const high = toFloat(stock.h) ?? 0;
+    const low = toFloat(stock.l) ?? 0;
+    const volume = toInt(stock.v) ? toInt(stock.v) * 1000 : 0;
+    const change = (price !== null && yesterday !== null) ? (price - yesterday) : 0;
+    const changePercent = (yesterday > 0) ? ((change / yesterday) * 100).toFixed(2) : '0.00';
+    const result = { stockId: stock.c, name: stock.n, price, open, high, low, yesterday, volume, time: stock.t, change, changePercent };
     setCache(cacheKey, result, CACHE_TTL.REALTIME);
     return result;
   } catch (error) {
@@ -483,6 +657,48 @@ function getDefaultStockList(market) {
 }
 
 /**
+ * 使用 Yahoo Finance 取得預設股票清單的即時報價 (中文名稱)
+ * @param {string} market - 市場 ('twse' 或 'tpex')
+ * @returns {Promise<Array>} 含即時報價的股票清單
+ */
+async function getDefaultStockListWithYahoo(market) {
+  const defaultList = getDefaultStockList(market);
+  
+  console.log(`正在透過 Yahoo Finance 取得 ${market} ${defaultList.length} 檔股票即時報價...`);
+  
+  // 使用 Yahoo Finance 批量取得即時報價
+  const enrichedStocks = await yahoo.fetchMultipleRealtime(
+    defaultList.map(s => ({
+      stockId: s.stockId,
+      name: s.name,
+      industry: s.industry,
+      market
+    })),
+    100 // 100ms 間隔
+  );
+  
+  console.log(`Yahoo Finance 成功取得 ${enrichedStocks.length} 檔 ${market} 股票資料`);
+  
+  // 轉換為統一格式
+  return enrichedStocks.map(stock => ({
+    stockId: stock.stockId,
+    symbol: stock.stockId,
+    name: stock.name,
+    industry: stock.industry,
+    close: stock.price,
+    price: stock.price,
+    open: stock.open,
+    high: stock.high,
+    low: stock.low,
+    change: stock.change,
+    changePercent: Number(stock.changePercent),
+    volume: stock.volume,
+    market,
+    source: 'yahoo'
+  }));
+}
+
+/**
  * 取得全部台股（上市+上櫃）
  * @returns {Promise<Array>} 全部股票清單
  */
@@ -493,6 +709,27 @@ async function getAllStocks() {
     getAllTWSEStocks(),
     getAllTPExStocks()
   ]);
+
+  // 檢查是否為 fallback 資料 (價格為 0)
+  const twseFallback = twseStocks.every(s => s.isFallback || s.close === 0);
+  const tpexFallback = tpexStocks.every(s => s.isFallback || s.close === 0);
+
+  if (twseFallback || tpexFallback) {
+    console.log('TWSE/TPEx API 返回空資料,改用 Yahoo Finance 取得即時報價...');
+    
+    try {
+      const [yahooTwse, yahooTpex] = await Promise.all([
+        getDefaultStockListWithYahoo('twse'),
+        getDefaultStockListWithYahoo('tpex')
+      ]);
+      
+      const allYahoo = [...yahooTwse, ...yahooTpex];
+      console.log(`Yahoo Finance 共取得 ${allYahoo.length} 檔股票`);
+      return allYahoo;
+    } catch (e) {
+      console.error('Yahoo Finance fallback 失敗:', e.message);
+    }
+  }
 
   console.log(`取得上市股票 ${twseStocks.length} 檔, 上櫃股票 ${tpexStocks.length} 檔`);
   
@@ -607,94 +844,57 @@ const INDUSTRY_MAP = {
  * 根據股票代號推斷產業
  * 使用優先級順序匹配，避免過度匹配
  */
-function inferIndustry(stockId, name) {
+function inferIndustry(stockId, name, industryCode) {
   if (!name) return '其他';
-  
-  // 1. ETF 判斷 (最高優先級)
+
+  // 1. 產業代碼優先（如有）
+  if (industryCode && typeof industryCode === 'string') {
+    const codeMap = {
+      '31': 'ETF',
+      '27': '金融保險',
+      '19': '通信網路',
+      '4': '半導體',
+      '5': '生技醫療',
+      '25': '航運',
+      '7': '鋼鐵',
+      '8': '塑膠',
+      '18': '光電',
+      '17': '電腦及週邊',
+      '20': '電子零組件',
+      '24': '建材營造',
+      '13': '食品',
+      '26': '觀光',
+      '29': '油電燃氣',
+    };
+    if (codeMap[industryCode]) return codeMap[industryCode];
+  }
+
+  // 2. 關鍵字表格化（正則）
+  const rules = [
+    { type: 'ETF', regex: /ETF|元大台灣|國泰永續|富邦.*(50|100|高股息|科技|金融)/ },
+    { type: '金融保險', regex: /金控|銀行|證券|人壽|產險|投信|[^黃]金$/ },
+    { type: '通信網路', regex: /電信|遠傳|台灣大|中華電/ },
+    { type: '半導體', regex: /積電|聯電|晶|半導體|IC設計|封測|矽|創意|世芯/ },
+    { type: '生技醫療', regex: /藥|醫|生技|疫苗/ },
+    { type: '航運', regex: /航|長榮|陽明|萬海/ },
+    { type: '鋼鐵', regex: /鋼|鐵/ },
+    { type: '塑膠', regex: /塑|台化|南亞|台塑/ },
+    { type: '光電', regex: /光電|面板|顯示|友達|群創|大立光/ },
+    { type: '電腦及週邊', regex: /電腦|華碩|宏碁|技嘉|微星|廣達|緯創/ },
+    { type: '電子零組件', regex: /電子|鴻海|和碩|可成/ },
+    { type: '建材營造', regex: /建|營造|水泥/ },
+    { type: '食品', regex: /食|飲|統一|味/ },
+    { type: '觀光', regex: /飯店|旅|觀光|高鐵/ },
+    { type: '油電燃氣', regex: /油|瓦斯|燃氣|台塑化/ },
+  ];
+
+  for (const rule of rules) {
+    if (rule.regex.test(name)) return rule.type;
+  }
+
+  // ETF 判斷（代號）
   if (stockId && stockId.startsWith('00')) return 'ETF';
-  if (name.includes('ETF') || name.includes('元大台灣') || name.includes('國泰永續') || name.includes('富邦')) {
-    if (name.includes('50') || name.includes('100') || name.includes('高股息') || name.includes('科技') || name.includes('金融')) {
-      return 'ETF';
-    }
-  }
-  
-  // 2. 金融保險 (檢查特定詞彙，避免誤判)
-  if (name.includes('金控') || name.includes('銀行') || name.includes('證券') || 
-      name.includes('人壽') || name.includes('產險') || name.includes('投信') ||
-      (name.endsWith('金') && !name.includes('黃金'))) {
-    return '金融保險';
-  }
-  
-  // 3. 通信網路 (在電子之前檢查)
-  if (name.includes('電信') || name.includes('遠傳') || name.includes('台灣大') || name.includes('中華電')) {
-    return '通信網路';
-  }
-  
-  // 4. 半導體 (特定詞彙)
-  if (name.includes('積電') || name.includes('聯電') || name.includes('晶') || 
-      name.includes('半導體') || name.includes('IC設計') || name.includes('封測') ||
-      name.includes('矽') || name.includes('創意') || name.includes('世芯')) {
-    return '半導體';
-  }
-  
-  // 5. 生技醫療
-  if (name.includes('藥') || name.includes('醫') || name.includes('生技') || name.includes('疫苗')) {
-    return '生技醫療';
-  }
-  
-  // 6. 航運
-  if (name.includes('航') || name.includes('長榮') || name.includes('陽明') || name.includes('萬海')) {
-    return '航運';
-  }
-  
-  // 7. 鋼鐵
-  if (name.includes('鋼') || name.includes('鐵')) {
-    return '鋼鐵';
-  }
-  
-  // 8. 塑膠/化工
-  if (name.includes('塑') || name.includes('台化') || name.includes('南亞') || name.includes('台塑')) {
-    return '塑膠';
-  }
-  
-  // 9. 光電
-  if (name.includes('光電') || name.includes('面板') || name.includes('顯示') || 
-      name.includes('友達') || name.includes('群創') || name.includes('大立光')) {
-    return '光電';
-  }
-  
-  // 10. 電腦及週邊
-  if (name.includes('電腦') || name.includes('華碩') || name.includes('宏碁') || 
-      name.includes('技嘉') || name.includes('微星') || name.includes('廣達') || name.includes('緯創')) {
-    return '電腦及週邊';
-  }
-  
-  // 11. 電子零組件 (廣義電子，放在後面)
-  if (name.includes('電子') || name.includes('鴻海') || name.includes('和碩') || name.includes('可成')) {
-    return '電子零組件';
-  }
-  
-  // 12. 建材營造
-  if (name.includes('建') || name.includes('營造') || name.includes('水泥')) {
-    return '建材營造';
-  }
-  
-  // 13. 食品
-  if (name.includes('食') || name.includes('飲') || name.includes('統一') || name.includes('味')) {
-    return '食品';
-  }
-  
-  // 14. 觀光
-  if (name.includes('飯店') || name.includes('旅') || name.includes('觀光') || name.includes('高鐵')) {
-    return '觀光';
-  }
-  
-  // 15. 油電燃氣
-  if (name.includes('油') || name.includes('瓦斯') || name.includes('燃氣') || name.includes('台塑化')) {
-    return '油電燃氣';
-  }
-  
-  // 預設
+
   return '其他';
 }
 

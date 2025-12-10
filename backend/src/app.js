@@ -17,9 +17,12 @@ const modules = {};
 const { twStockData, backtestEngine: BacktestEngine, metrics, pricePredictor: PricePredictor, newsScraper: NewsScraper, sentimentAnalyzer: SentimentAnalyzer } = modules;
 
 const DB = require('./db');
+const logger = require('./utils/logger');
 const TwseOpenApi = require('./integrations/twseOpenApi');
 const TwseSyncJob = require('./jobs/twseSyncJob');
 const LineNotify = require('./integrations/lineNotify');
+const C = require('./config/constants');
+const { calculateRSI } = require('./utils/indicators');
 let dbInstance = null;
 
 // === 工具函數 ===
@@ -31,7 +34,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // === 中介軟體 ===
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
-app.use((req, res, next) => { console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`); next(); });
+app.use((req, res, next) => { logger.info(`${req.method} ${req.path}`); next(); });
 
 // === API 路由 ===
 
@@ -262,23 +265,40 @@ app.get('/api/tw/potential-stocks', async (req, res) => {
   try {
     if (!twStockData) return res.status(503).json({ success: false, error: '模組未載入' });
     const allStocks = await twStockData.getAllStocks();
-    if (!allStocks?.length) return res.status(500).json({ success: false, error: '無資料' });
+    if (!allStocks?.length) return res.json({ success: true, total: 0, stocks: [] });
 
-    const stocks = allStocks.filter(s => s.close > 0 && s.name).map(s => {
+    // Compute metrics for potential stocks. Calculate RSI using historical data if possible.
+    const stocks = await Promise.all(allStocks.filter(s => s.close > 0 && s.name).map(async (s) => {
       const change = s.close - s.change > 0 ? (s.change / (s.close - s.change) * 100) : 0;
       const range = s.high - s.low;
       const pos = range > 0 ? ((s.close - s.low) / range * 100) : 50;
-      const rsi = Math.min(100, Math.max(0, pos + change * 1.5));
-      const score = Math.round(50 + (rsi > 70 ? -10 : rsi < 30 ? 10 : 0) + (change > 3 ? 15 : change < -3 ? -10 : change * 3));
-      
+
+      // Try to fetch ~1 month of history to compute RSI properly
+      let rsi = null;
+      try {
+        const history = await twStockData.getStockHistory(s.stockId, 1, 'twse');
+        if (history && history.length >= C.INDICATORS.RSI_PERIOD + 1) {
+          // extract closing prices array for RSI calculation
+          const closes = history.map(h => h.close).filter(v => typeof v === 'number' && !Number.isNaN(v));
+          if (closes.length >= C.INDICATORS.RSI_PERIOD + 1) {
+            rsi = calculateRSI(closes, C.INDICATORS.RSI_PERIOD);
+          }
+        }
+      } catch (e) { /* ignore history failures, fallback to heuristic */ }
+
+      // Fallback heuristic if RSI could not be calculated
+      if (rsi === null || isNaN(rsi)) rsi = Math.min(100, Math.max(0, pos + change * 1.5));
+
+      const score = Math.round(50 + (rsi > C.SCORING.RSI_OVERBOUGHT ? -10 : rsi < C.SCORING.RSI_OVERSOLD ? 10 : 0) + (change > 3 ? 15 : change < -3 ? -10 : change * 3));
+
       return {
         id: s.stockId, name: s.name, price: s.close, change: s.change,
         changePercent: parseFloat(change.toFixed(2)), volume: s.volume,
         industry: s.industry || twStockData.inferIndustry?.(s.stockId, s.name) || '其他',
         rsi: Math.round(rsi), aiScore: Math.min(100, Math.max(0, score)),
-        signals: rsi < 30 ? ['RSI超賣'] : rsi > 70 ? ['RSI超買'] : change > 5 ? ['強勢'] : ['觀望']
+        signals: rsi < C.SCORING.RSI_OVERSOLD ? ['RSI超賣'] : rsi > C.SCORING.RSI_OVERBOUGHT ? ['RSI超買'] : change > 5 ? ['強勢'] : ['觀望']
       };
-    });
+    }));
 
     res.json({ success: true, total: stocks.length, stocks });
   } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -292,13 +312,13 @@ if (require.main === module) {
   (async () => {
     try {
       dbInstance = await DB.init();
-      console.log('DB 初始化完成');
+      logger.info('DB 初始化完成');
 
       if (twStockData?.getAllStocks) {
         try {
           const all = await twStockData.getAllStocks();
           await DB.bulkUpsert(dbInstance, all);
-          console.log(`已同步 ${all.length} 檔股票`);
+          logger.info(`已同步 ${all.length} 檔股票`);
         } catch (e) { console.error('同步失敗:', e.message); }
       }
 
@@ -308,16 +328,16 @@ if (require.main === module) {
         try {
           const all = await twStockData.getAllStocks();
           if (all?.length) await DB.bulkUpsert(dbInstance, all);
-        } catch (e) { console.error('同步失敗:', e.message); }
+        } catch (e) { logger.error('同步失敗:', e.message); }
       }, 5 * 60 * 1000);
 
       // TWSE 排程
       if (process.env.TWSE_SYNC_ENABLED === '1') {
         TwseSyncJob.startSync(dbInstance, { pathTemplate: process.env.TWSE_OPENAPI_QUOTE_PATH || '/v1/quote/{symbol}' });
       }
-    } catch (e) { console.error('初始化失敗:', e.message); }
+    } catch (e) { logger.error('初始化失敗:', e.message); }
 
-    app.listen(PORT, '0.0.0.0', () => console.log(`API 啟動於 http://0.0.0.0:${PORT}`));
+    app.listen(PORT, '0.0.0.0', () => logger.info(`API 啟動於 http://0.0.0.0:${PORT}`));
   })();
 }
 

@@ -43,13 +43,15 @@ async function fetchMarketNews() {
     });
 
     if (newsItems.length === 0) {
-      console.log('Yahoo scraper returned 0 items, using fallback.');
+      const logger = require('../utils/logger');
+      logger.warn('Yahoo scraper returned 0 items, using fallback.');
       return getMockNews();
     }
 
     return newsItems;
   } catch (error) {
-    console.error('News scraping failed:', error.message);
+    const logger = require('../utils/logger');
+    logger.error('News scraping failed:', error.message);
     return getMockNews();
   }
 }
